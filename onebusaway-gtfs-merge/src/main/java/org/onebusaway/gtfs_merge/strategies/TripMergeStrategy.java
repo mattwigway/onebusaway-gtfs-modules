@@ -17,6 +17,7 @@ package org.onebusaway.gtfs_merge.strategies;
 
 import java.util.List;
 
+import org.onebusaway.gtfs.model.AgencyAndId;
 import org.onebusaway.gtfs.model.Frequency;
 import org.onebusaway.gtfs.model.IdentityBean;
 import org.onebusaway.gtfs.model.StopTime;
@@ -51,7 +52,7 @@ public class TripMergeStrategy extends
     for (int i = 0; i < sourceStopTimes.size(); ++i) {
       StopTime sourceStopTime = sourceStopTimes.get(i);
       StopTime targetStopTime = targetStopTimes.get(i);
-      if (sourceStopTime.getStop().equals(targetStopTime.getStop())) {
+      if (!sourceStopTime.getStop().equals(targetStopTime.getStop())) {
         return true;
       }
       if (sourceStopTime.getArrivalTime() != targetStopTime.getArrivalTime()
@@ -70,7 +71,7 @@ public class TripMergeStrategy extends
       stopTime.setTrip(newTrip);
     }
     for (Frequency frequency : source.getFrequenciesForTrip(oldTrip)) {
-      frequency.setTrip(newTrip);
+      frequency.setTrip(newTrip); 
     }
   }
 
@@ -83,6 +84,27 @@ public class TripMergeStrategy extends
     for (StopTime stopTime : source.getStopTimesForTrip(trip)) {
       stopTime.setId(0);
       target.saveEntity(stopTime);
+    }
+  }
+  
+  @Override
+  protected void rename(GtfsMergeContext context, IdentityBean<?> entity) {
+    if (!(entity instanceof Trip)) {
+      super.rename(context, entity);
+      return;
+    }
+    
+    Trip trip = (Trip) entity;  
+    AgencyAndId id = trip.getId();
+    
+    // this is why we need a separate rename for trips: the stop times don't come with them!
+    List<StopTime> stopTimes = context.getTarget().getStopTimesForTrip(trip);
+    
+    MergeSupport.renameAgencyAndId(context, id);
+    trip.setId(id);
+    
+    for (StopTime stopTime : stopTimes) {
+      stopTime.setTrip(trip);
     }
   }
 }
