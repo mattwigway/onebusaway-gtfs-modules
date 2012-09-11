@@ -165,6 +165,24 @@ public class GtfsReader extends CsvEntityReader {
       _log.info("reading entities: " + entityClass.getName());
 
       readEntities(entityClass, source);
+      
+      // after reading, set the default agency ID to be the ID of the only
+      // agency if there is only one. This way, if an agency puts an agency_id
+      // in agency.txt but not in routes.txt, the feed will still parse and
+      // routes will still get agencies. Northern Indiana Commuter
+      // Transportation District and Thousand Oaks Transit are two agencies
+      // which code their GTFS this way. This won't affect the use of
+      // the default agency id for multifeed stop sharing, because, if the
+      // agencies have no explicit IDs defined, the default agency id will
+      // be applied to the agency and then copied back to the default agency
+      // id. If the agencies do have explicit IDs defined, this wouldn't work
+      // anyhow.
+      if (entityClass == Agency.class) {
+        if (_agencies.size() == 1) {
+          _defaultAgencyId = _agencies.get(0).getId();
+        }
+      }
+      
       _entityStore.flush();
     }
 

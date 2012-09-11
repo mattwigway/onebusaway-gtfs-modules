@@ -495,6 +495,58 @@ public class GtfsReaderTest {
     assertNull(fareRule.getContainsId());
   }
 
+  /**
+   * Test the case where agency.txt has an agency ID and routes.txt does not.
+   * @author mattwigway
+   */
+  @Test
+  public void testAgencyWithIdRoutesWithNoId () throws IOException, 
+      ParseException {
+    MockGtfs mock = MockGtfs.create();
+    mock.putLines(
+        "agency.txt",
+        "agency_id,agency_name,agency_url,agency_timezone",
+        "TEST,Test Agency,http://example.com/,America/Los_Angeles"
+        );
+    
+    mock.putLines(
+        "stops.txt",
+        "stop_id,stop_name,stop_lat,stop_lon",
+        "1,test,24.5,-3.45",
+        "2,other,24.5003,-3.45003"
+        );
+    
+    // Notice no agency IDs
+    mock.putLines(
+        "routes.txt",
+        "route_id,route_short_name,route_long_name,route_type",
+        "1,1,One,0"
+        );
+    
+    mock.putLines(
+        "trips.txt",
+        "route_id,service_id,trip_id",
+        "1,WEEK,1"
+        );
+    
+    mock.putLines(
+        "stop_times.txt",
+        "trip_id,arrival_time,departure_time,stop_id,stop_sequence",
+        "1,08:00:00,08:00:00,1,0",
+        "1,14:00:00,14:00:00,2,1"
+        );
+    
+    mock.putLines(
+        "calendar.txt",
+        "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date",
+        "WEEK,1,1,1,1,1,1,1,20120505,20131231"
+        );
+    
+    // this will throw an exception if the agency and route are not linked properly
+    @SuppressWarnings("unused")
+    GtfsRelationalDao dao = processFeed(mock.getPath(), "test", false);
+  }
+  
   @Test
   public void testBart() throws IOException, ParseException {
 
